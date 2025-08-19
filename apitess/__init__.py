@@ -1,15 +1,16 @@
 """Tesserae API implementation"""
-import flask
-from flask_cors import CORS
 
+import os
+import flask
 import tesserae.db
+from flask_cors import CORS
 
 
 def _load_config(app, test_config):
     """Load configuration into `app`"""
     if test_config is None:
         # load the instance config, if it exists, when not testing
-        app.config.from_pyfile('config.py', silent=True)
+        app.config.from_pyfile("config.py", silent=True)
     else:
         # load the test config if passed in
         app.config.from_mapping(test_config)
@@ -22,11 +23,21 @@ def _register_before_request(app, jobqueue, ingest_queue):
     g.db and to the searcher via g.searcher.
     """
     # http://librelist.com/browser/flask/2013/8/21/flask-pymongo-and-blueprint/#811dd1b119757bc09d28425a5bda86d9
-    db = tesserae.db.TessMongoConnection(app.config['MONGO_HOSTNAME'],
-                                         app.config['MONGO_PORT'],
-                                         app.config['MONGO_USER'],
-                                         app.config['MONGO_PASSWORD'],
-                                         db=app.config['DB_NAME'])
+    # db = tesserae.db.TessMongoConnection(
+    #     app.config["MONGO_HOSTNAME"],
+    #     app.config["MONGO_PORT"],
+    #     app.config["MONGO_USER"],
+    #     app.config["MONGO_PASSWORD"],
+    #     db=app.config["DB_NAME"],
+    # )
+    
+    db = tesserae.db.TessMongoConnection(
+        os.environ.get("MONGO_HOSTNAME", "localhost"),
+        int(os.environ.get("MONGO_PORT", 27017)),
+        os.environ.get("MONGO_USER", None),
+        os.environ.get("MONGO_PASSWORD", None),
+        db=os.environ.get("DB_NAME", "tesserae"),
+    )
 
     @app.before_request
     def before_request():
@@ -36,8 +47,8 @@ def _register_before_request(app, jobqueue, ingest_queue):
 
 
 def _register_blueprints(app):
-    from . import parallels, stopwords, texts, units, features, \
-        multitexts, languages
+    from . import features, languages, multitexts, parallels, stopwords, texts, units
+
     app.register_blueprint(parallels.bp)
     app.register_blueprint(stopwords.bp)
     app.register_blueprint(texts.bp)
@@ -68,17 +79,24 @@ def create_app(jobqueue, ingest_queue, test_config=None):
     _register_before_request(app, jobqueue, ingest_queue)
     _register_blueprints(app)
 
-    CORS(app, expose_headers=['Content-Type', 'Location'])
+    CORS(
+        app,
+        expose_headers=["Content-Type", "Location"],
+        origins=["http://127.0.0.1:3000", "http://localhost:3000"],
+    )
 
-    @app.route('/')
+    @app.route("/")
     def helpful_root():
-        docs_url = 'https://tesserae.caset.buffalo.edu/docs/api/'
+        docs_url = "https://tesserae.caset.buffalo.edu/docs/api/"
         response = flask.Response(
-            response=('The root endpoint is undefined for this API. '
-                      f'See the <a href="{docs_url}">documentation</a> for '
-                      'more details.'))
+            response=(
+                "The root endpoint is undefined for this API. "
+                f'See the <a href="{docs_url}">documentation</a> for '
+                "more details."
+            )
+        )
         response.status_code = 404
-        response.status = '404 Not Found'
+        response.status = "404 Not Found"
         return response
 
     return app
