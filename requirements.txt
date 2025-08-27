@@ -1,4 +1,4 @@
 # apitess/requirements.txt
 flask
 flask-cors
-git+https://github.com/tesserae/tesserae-v5.git#egg=tesserae
+git+https://github.com/alvintsa/tesserae-v5-migration.git@migration#egg=tesserae

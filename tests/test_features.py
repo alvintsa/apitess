@@ -6,7 +6,6 @@ import werkzeug.datastructures
 
 import tesserae.db.entities
 
-
 def test_query_features_empty(app, client):
     with app.test_request_context():
         endpoint = flask.url_for('features.query_features')
