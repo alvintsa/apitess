@@ -30,10 +30,10 @@ def test_query_units_with_fields(populated_app, populated_client):
     response = populated_client.get('/texts/')
     assert response.status_code == 200
     data = response.get_json()
-    text_id = data['texts'][0]['object_id']
+    text_ids = sorted(t['object_id'] for t in data['texts'])
     unit_type = 'line'
     with populated_app.test_request_context():
-        endpoint = flask.url_for('units.query_units', works=text_id,
+        endpoint = flask.url_for('units.query_units', works=','.join(text_ids),
                 unit_type=unit_type)
     response = populated_client.get(endpoint)
     assert response.status_code == 200
@@ -81,7 +81,7 @@ def test_query_units_with_multiple_units(populated_app, populated_client):
     response = populated_client.get(endpoint)
     assert response.status_code == 200
     data = response.get_json()
-    unit_ids = [u['object_id'] for u in data['units']]
+    unit_ids = sorted(u['object_id'] for u in data['units'])
     with populated_app.test_request_context():
         endpoint = flask.url_for('units.query_units',
                 unit_ids=urllib.parse.quote(','.join(unit_ids)),
